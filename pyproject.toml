@@ -1,0 +1,44 @@
+[project]
+name = "opswatch-cli"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "maximumhappiness", email = "twisted.pat@gmx.de" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+opswatch-cli = "opswatch_cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.4",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+extend-select = [
+"B",
+"I",
+"UP",
+]
+select = ["ALL"]
+ignore = [
+"CPY001", "T201", "D400", "D401", "D211", "D213", "COM812", "D203"
+]
