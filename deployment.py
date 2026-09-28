@@ -2,7 +2,7 @@
 
 
 def describe_deployment(successful: bool) -> str:
-    """Return a redable deployment status."""
+    """Return a readable deployment status."""
     if successful:
         return "Deployment erfolgreich"
 
