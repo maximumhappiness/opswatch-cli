@@ -4,6 +4,6 @@
 def describe_deployment(successful: bool) -> str:
     """Return a readable deployment status."""
     if successful:
-        return "Deployment erfolgreich"
+        return "Deployment successful"
 
-    return "Deployment fehlgeschlagen"
+    return "Deployment failed"

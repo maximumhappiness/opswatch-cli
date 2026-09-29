@@ -4,7 +4,7 @@
 def evaluate_status(status_code: int) -> str:
     """Evaluates staus codes and describes them."""
     if status_code == 0:
-        return "Gesund"
+        return "OK"
     if status_code == 1:
-        return "Warnung"
-    return "Critical State"
+        return "Warning"
+    return "Critical"
