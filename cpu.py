@@ -10,13 +10,13 @@ def cpu_load() -> float:
     return psutil.cpu_percent(interval=1)
 
 
-def evaluate_cpu_usage(cpu_workload: float) ->str:
+def evaluate_cpu_usage(cpu_workload: float) -> str:
     """Evaluates CPU Usage and displays a Message."""
     if cpu_workload > CPU_INCREASED_THRESHOLD:
         cpu_msg = "CPU load: increased"
     elif cpu_workload > CPU_WARNING_THRESHOLD:
         cpu_msg = "Warning: High CPU load!"
     else:
-        cpu_msg= "CPU Load: Normal"
+        cpu_msg = "CPU Load: Normal"
 
     return cpu_msg
