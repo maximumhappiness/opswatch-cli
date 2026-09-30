@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-opswatch-cli = "opswatch_cli:main"
+opswatch-cli = "opswatch_cli.main:app"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
@@ -42,3 +42,6 @@ ignore = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D100", "D103", "INP001", "S101"]

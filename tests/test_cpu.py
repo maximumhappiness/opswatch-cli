@@ -1,5 +1,5 @@
-
 from opswatch_cli.cpu import evaluate_cpu_usage
+
 
 def test_cpu_usage_normal() -> None:
     assert evaluate_cpu_usage(50.0) == "CPU load: Normal"
