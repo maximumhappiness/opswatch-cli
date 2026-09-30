@@ -34,12 +34,11 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.ruff.lint]
-extend-select = [
-"B",
-"I",
-"UP",
-]
 select = ["ALL"]
 ignore = [
 "CPY001", "T201", "D400", "D401", "D211", "D213", "COM812", "D203"
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

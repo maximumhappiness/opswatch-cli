@@ -12,11 +12,12 @@ def cpu_load() -> float:
 
 def evaluate_cpu_usage(cpu_workload: float) -> str:
     """Evaluates CPU Usage and displays a Message."""
+    
     if cpu_workload > CPU_WARNING_THRESHOLD:
         cpu_msg = "Warning: High CPU load!"
     elif cpu_workload > CPU_INCREASED_THRESHOLD:
-        cpu_msg = "CPU load: increased"
+        cpu_msg = "CPU load: Increased"
     else:
-        cpu_msg = "CPU Load: Normal"
+        cpu_msg = "CPU load: Normal"
 
     return cpu_msg

@@ -1,0 +1,1407 @@
+Thema
+Diesen Chat speichern
+
+Am einfachsten speicherst du unseren Lernstand als PDF oder kopierst ihn in eine Markdown-Datei in dein OpsWatch-Projekt.
+
+Möglichkeit 1: Als PDF speichern
+
+Im Browser:
+
+Drücke Strg + P.
+Wähle als Drucker„Als PDF speichern“ beziehungsweise„Microsoft Print to PDF“.
+Klicke auf Speichern.
+Verwende beispielsweise diesen Dateinamen:
+opswatch-lerntagebuch-2026-09-28.pdf
+
+
+Das ist gut zum Lesen und Archivieren. Abhängig von der Copilot-Oberfläche kann es außerdem eine Teilen- oder Exportfunktion geben, wobei sich die verfügbaren Optionen zwischen den Oberflächen unterscheiden können.
+
+Möglichkeit 2: Für dein Projekt als Markdown speichern
+
+Für deinen Lernweg empfehle ich zusätzlich eine Markdown-Datei. Markiere den relevanten Chatinhalt, kopiere ihn und lege in PyCharm diese Datei an:
+
+docs/lerntagebuch.md
+
+
+Eine passende Struktur wäre:
+
+# OpsWatch CLI Lerntagebuch
+
+## 28.09.2026
+
+### Bereits behandelt
+
+- Python-Funktion `main()`
+- Variablen und Datentypen
+- Type Hints
+- Bedingungen
+- Git-Branches
+- `git diff`
+- Abhängigkeiten mit `uv`
+- Codeprüfung mit Ruff
+- Einführung in echte CPU-Daten mit psutil
+
+### Aktueller Stand
+
+OpsWatch soll als Nächstes die echte CPU-Auslastung
+mit `psutil.cpu_percent(interval=1)` auslesen.
+
+### Wichtige Befehle
+
+```shell
+uv add psutil
+uv run python main.py
+uv run ruff check .
+uv run ruff format --check .
+git status
+git diff
+
+Nächster Schritt
+
+Die echte CPU-Auslastung einmalig auslesen und anzeigen.
+
+
+Markdown ist für ein Softwareprojekt besonders praktisch, weil:
+
+- die Datei direkt im Repository liegt,
+- Änderungen mit Git nachvollziehbar sind,
+- GitHub Markdown formatiert darstellen kann,
+- du später schnell an deinen Lernstand anknüpfen kannst.
+
+Achte darauf, keine vertraulichen System-, Unternehmens- oder Zugangsdaten in ein öffentliches Repository zu committen.
+
+## Möglichkeit 3: Nur einen wichtigen Abschnitt kopieren
+
+Wenn du nicht den gesamten Chat benötigst:
+
+1. Markiere die gewünschte Antwort.
+2. Drücke **`Strg + C`**.
+3. Öffne PyCharm.
+4. Erstelle beispielsweise:
+
+```text
+docs/cpu-monitoring-uebung.md
+
+Füge den Inhalt mit Strg + V ein.
+
+Danach kannst du die Dokumentation mit Git sichern:
+
+git add docs/lerntagebuch.md
+git commit -m "docs: add OpsWatch learning notes"
+
+Meine Empfehlung
+
+Nutze beides:
+
+PDF als unveränderliche Kopie des Chats
+docs/lerntagebuch.md als fortlaufende Projektdokumentation
+Nächster Lernschritt
+
+Nachdem du den Chat gespeichert hast, kehren wir zu unserem kleinen Schritt zurück: psutil mit uv add psutil installieren und zunächst nur kontrollieren, ob die Bibliothek importiert werden kann.
+
+Thema
+Code Review: CPU-Auslastung in einer eigenen Funktion bewerten
+
+Die Idee ist sehr gut: Du möchtest die Bewertung aus main() in eine eigene Funktion verschieben. Genau diese Trennung macht den Code leichter lesbar und später gut testbar. Aktuell verhindern jedoch einige Gültigkeitsbereichs- und Verzweigungsfehler die Ausführung.
+
+Beispiel
+
+Eine korrigierte Version, die nah an deinem Entwurf bleibt:
+
+"""OpsWatch CLI: Command-line tool for system monitoring."""
+
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+
+CPU_WARNING_THRESHOLD = 80.0
+CPU_INCREASED_THRESHOLD = 60.0
+
+
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+    """Return a status message for the given CPU workload."""
+    if cpu_workload > CPU_WARNING_THRESHOLD:
+        cpu_msg = "Warning: High CPU load!"
+    elif cpu_workload > CPU_INCREASED_THRESHOLD:
+        cpu_msg = "CPU load: Increased"
+    else:
+        cpu_msg = "CPU load: Normal"
+
+    return cpu_msg
+
+
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+    cpu_msg = evaluate_cpu_usage(cpu_workload)
+
+    print("OpsWatch CLI running!")
+    print(f"Deployment: {deployment_status}")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU load: {cpu_workload:.1f} %")
+    print(cpu_msg)
+
+
+if __name__ == "__main__":
+    main()
+
+Erklärung des Codes
+1. Funktionsparameter und verwendete Variable stimmen nicht überein
+
+Du definierst die Funktion mit:
+
+def cpu_usage(cpu_load: float) -> str:
+
+
+Innerhalb der Funktion verwendest du jedoch:
+
+if cpu_workload > cpu_increased_threshold:
+
+
+Die Funktion kennt nur ihren Parameter cpu_load. cpu_workload wurde dagegen ausschließlich innerhalb von main() definiert.
+
+Variablen innerhalb einer Funktion sind normalerweise nur in dieser Funktion verfügbar:
+
+main()
+└── cpu_workload       nur innerhalb von main()
+
+evaluate_cpu_usage()
+└── cpu_workload       eigener Funktionsparameter
+
+
+Deshalb verwendet die korrigierte Funktion einen passenden Parameter:
+
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+
+
+Der Name evaluate_cpu_usage beschreibt außerdem genauer, was die Funktion macht: Sie misst die CPU nicht, sondern bewertet einen bereits gemessenen Wert.
+
+2. Namenskonflikt mit cpu_load
+
+Du importierst:
+
+from cpu import cpu_load
+
+
+Dann verwendest du denselben Namen als Funktionsparameter:
+
+def cpu_usage(cpu_load: float) -> str:
+
+
+Innerhalb dieser Funktion würde cpu_load nicht mehr für die importierte Funktion stehen, sondern für den übergebenen Messwert. Das nennt man Überschatten eines Namens.
+
+Technisch kann Python damit umgehen, aber es verwirrt Leser. Besser ist:
+
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+
+
+Damit sind die Bedeutungen klar:
+
+cpu_load() ist die Messfunktion.
+cpu_workload ist der gemessene Zahlenwert.
+evaluate_cpu_usage() bewertet diesen Zahlenwert.
+3. Die Grenzwerte sind in der Bewertungsfunktion nicht bekannt
+
+In deinem Code liegen die Grenzwerte in main():
+
+cpu_warning_threshold = 80.0
+cpu_increased_threshold = 60.0
+
+
+Du verwendest sie aber in einer anderen Funktion. Dort sind sie nicht verfügbar.
+
+Das würde zu dieser Art von Fehler führen:
+
+NameError: name 'cpu_increased_threshold' is not defined
+
+
+Da die Grenzwerte feste Einstellungen des Programms sind, eignen sie sich als Konstanten auf Modulebene:
+
+CPU_WARNING_THRESHOLD = 80.0
+CPU_INCREASED_THRESHOLD = 60.0
+
+
+Die Großschreibung signalisiert:
+
+Dieser Wert ist eine Programmeinstellung und soll während der Ausführung nicht verändert werden.
+
+4. Zwei einzelne if-Anweisungen erzeugen eine falsche Auswertung
+
+Du hast geschrieben:
+
+if cpu_workload > cpu_increased_threshold:
+    cpu_msg = "CPU load: increased"
+
+if cpu_workload > cpu_warning_threshold:
+    cpu_msg = "Warning: High CPU load!"
+else:
+    cpu_msg = "CPU Load: Normal"
+
+
+Das else gehört nur zum direkt davorstehenden zweiten if.
+
+Nehmen wir einen CPU-Wert von 70.0:
+
+70.0 > 60.0 ist wahr.
+cpu_msg wird auf "CPU load: increased" gesetzt.
+70.0 > 80.0 ist falsch.
+Der else-Block wird ausgeführt.
+cpu_msg wird wieder mit "CPU Load: Normal" überschrieben.
+
+Das Ergebnis wäre also fälschlicherweise Normal.
+
+Du benötigst eine zusammenhängende Verzweigung:
+
+if cpu_workload > CPU_WARNING_THRESHOLD:
+    cpu_msg = "Warning: High CPU load!"
+elif cpu_workload > CPU_INCREASED_THRESHOLD:
+    cpu_msg = "CPU load: Increased"
+else:
+    cpu_msg = "CPU load: Normal"
+
+
+Python wählt dabei genau einen Zweig aus.
+
+5. Der höchste Grenzwert muss zuerst geprüft werden
+
+Die Reihenfolge ist wichtig:
+
+if cpu_workload > CPU_WARNING_THRESHOLD:
+
+
+kommt vor:
+
+elif cpu_workload > CPU_INCREASED_THRESHOLD:
+
+
+Ein CPU-Wert von 90.0 liegt schließlich sowohl über 60.0 als auch über 80.0.
+
+Wenn du zuerst > 60.0 prüfen würdest, würde Python bereits "Increased" auswählen und die Warnstufe nicht mehr prüfen.
+
+Der Ablauf ist deshalb:
+
+CPU-Wert über 80?
+├── Ja: Warning
+└── Nein: CPU-Wert über 60?
+          ├── Ja: Increased
+          └── Nein: Normal
+
+6. Die Bewertungsfunktion muss aufgerufen werden
+
+In deinem main() steht:
+
+print(f"{cpu_msg}")
+
+
+cpu_msg wurde dort aber noch nicht definiert. Die Funktion zur Bewertung muss zuerst aufgerufen werden:
+
+cpu_msg = evaluate_cpu_usage(cpu_workload)
+
+
+Danach kann das Ergebnis ausgegeben werden:
+
+print(cpu_msg)
+
+
+Ein f-String wird hier nicht benötigt, weil nur der Inhalt der Variablen ausgegeben wird.
+
+7. Formatierung nach PEP 8
+
+In deinem Entwurf fehlen einige Leerzeichen:
+
+def cpu_usage(cpu_load: float) ->str:
+cpu_msg= "CPU Load: Normal"
+
+
+Die übliche Schreibweise ist:
+
+def cpu_usage(cpu_load: float) -> str:
+cpu_msg = "CPU load: Normal"
+
+
+Ruff sollte solche Stilprobleme teilweise erkennen beziehungsweise formatieren können.
+
+8. Hinweis zu den HTML-Zeichen
+
+Im eingefügten Text stehen:
+
+-&gt;
+&gt;
+<br>
+
+
+In PyCharm müssen die echten Python-Zeichen stehen:
+
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+
+
+und:
+
+if cpu_workload > CPU_WARNING_THRESHOLD:
+
+Code-Review-Bewertung
+Lesbarkeit: gut mit Korrekturbedarf
+
+Die Absicht der neuen Funktion ist erkennbar. Die Namen cpu_load, cpu_workload und cpu_usage liegen aber zu nah beieinander und haben teilweise unterschiedliche Bedeutungen.
+
+Struktur: guter Fortschritt
+
+Die Auslagerung der CPU-Bewertung ist der richtige nächste Schritt. Dadurch hat jede Funktion eine klare Aufgabe:
+
+cpu_load()             misst die CPU
+evaluate_cpu_usage()   bewertet die Messung
+main()                 koordiniert den Ablauf
+
+Effizienz: gut
+
+Die Vergleiche sind sehr günstig. Die eigentliche Wartezeit entsteht vermutlich durch psutil.cpu_percent(interval=1) und ist für eine Messung beabsichtigt.
+
+Python-Best-Practices: teilweise erfüllt
+
+Positiv:
+
+Funktionsrückgabe als str
+Type Hint für den Messwert
+Auslagerung der Bewertungslogik
+klare Statusstufen
+modularer Projektaufbau
+
+Zu korrigieren:
+
+Variablengültigkeit beachten
+if, elif und else zusammenhängend verwenden
+Funktion tatsächlich aufrufen
+Namenskonflikte vermeiden
+Leerzeichen nach PEP 8 setzen
+feste Grenzwerte als Konstanten darstellen
+Übung
+
+Übernimm die Korrekturen und teste anschließend gezielt die Grenzfälle. Ändere dazu vorübergehend nicht die echte CPU-Messung, sondern führe in PyCharm in der Python-Konsole diese Aufrufe aus:
+
+evaluate_cpu_usage(50.0)
+evaluate_cpu_usage(60.0)
+evaluate_cpu_usage(60.1)
+evaluate_cpu_usage(80.0)
+evaluate_cpu_usage(80.1)
+
+
+Notiere für jeden Wert, welche Meldung du erwartest, bevor du den Aufruf ausführst.
+
+Beantworte außerdem:
+
+Warum wird 80.0 bei > noch nicht als Warnung behandelt?
+Warum muss die Prüfung für den Grenzwert 80.0 vor der Prüfung für 60.0 stehen?
+Was ist der Unterschied zwischen cpu_load() und cpu_workload?
+Warum kennt eine Funktion nicht automatisch alle lokalen Variablen aus main()?
+Hinweis
+
+Prüfe nach der Änderung:
+
+uv run python main.py
+uv run ruff check .
+uv run ruff format --check .
+
+
+Kontrolliere danach den tatsächlichen Unterschied:
+
+git status
+git diff
+
+
+Diese Änderung ist inzwischen mehr als eine reine Formatkorrektur. Du hast eine neue Bewertungsfunktion ergänzt. Eine passende Commit-Nachricht wäre:
+
+git add main.py
+git commit -m "feat: add CPU load status evaluation"
+
+Nächster Lernschritt
+
+Als Nächstes sollten wir evaluate_cpu_usage() mit pytest automatisiert testen. Die Werte 60.0, 60.1, 80.0 und 80.1 eignen sich besonders gut, weil Fehler häufig direkt an solchen Grenzwerten auftreten.
+
+Wichtigste Verbesserungen
+Die CPU-Bewertung erhält den Messwert als echten Funktionsparameter.
+Die Grenzwerte werden als Konstanten verfügbar gemacht.
+if, elif und else verhindern das Überschreiben eines bereits gewählten Status.
+Der höchste Grenzwert wird zuerst geprüft.
+Das Ergebnis der Bewertungsfunktion wird in main() gespeichert und anschließend ausgegeben.
+"""OpsWatch CLI: Command-line Tool for system monitoring."""
+
+
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+
+
+
+
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+
+
+    print(deployment_status)
+    print("OpsWatch CLI läuft!")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU Load: {cpu_workload:.1f}%")
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+Python Lehrer said:
+Python Lehrer
+Python Lehrer
+Begründung abgeschlossen in 1 Schritt
+Thema
+Code Review: Überarbeitete Hauptfunktion von OpsWatch
+Dein Refactoring ist gelungen: Die unnötige erste Zuweisung von status ist entfernt, die Imports sind ordentlich sortiert und die CPU-Auslastung wird auf eine Nachkommastelle formatiert. Der Code ist funktionsfähig und bereits gut strukturiert.
+Beispiel
+Eine leicht verbesserte Version deines aktuellen Codes:
+Python
+"""OpsWatch CLI: Command-line tool for system monitoring."""
+ 
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+ 
+ 
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+ 
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+ 
+    print("OpsWatch CLI läuft!")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"Deployment: {deployment_status}")
+    print(f"CPU-Auslastung: {cpu_workload:.1f} %")
+ 
+ 
+if __name__ == "__main__":
+    main()
+Weitere Zeilen anzeigen
+Erklärung des Codes
+1. Dein Refactoring war erfolgreich
+Du hast diese unnötige Zuweisung korrekt entfernt:
+Python
+status = "Bereit"
+Vorher wurde "Bereit" gespeichert und kurz darauf durch das Ergebnis von evaluate_status() ersetzt. Jetzt existiert jede Variable nur dann, wenn ihr Wert tatsächlich gebraucht wird.
+Das ist Clean Code: Der Code enthält keine Anweisungen ohne Zweck.
+2. Gute Trennung der Verantwortlichkeiten
+Deine Funktionen erfüllen unterschiedliche Aufgaben:
+Plain Text
+cpu_load()              → misst die CPU-Auslastung
+describe_deployment()   → beschreibt den Deployment-Status
+evaluate_status()       → wertet einen Statuscode aus
+main()                  → koordiniert den Programmablauf
+main() wirkt damit wie ein Teamleiter: Die Funktion erledigt nicht jede Aufgabe selbst, sondern ruft die zuständigen Spezialisten auf und stellt deren Ergebnisse zusammen.
+3. CPU-Formatierung ist korrekt
+Du verwendest:
+Python
+print(f"CPU Load: {cpu_workload:.1f}%")
+.1f formatiert die Zahl mit genau einer Nachkommastelle.
+Aus:
+Plain Text
+17.349999
+wird:
+Plain Text
+17.3
+Das ist für eine Konsolenausgabe deutlich besser lesbar.
+Nach PEP-8-Regeln für Python-Code ist deine Schreibweise bereits korrekt. Bei der sichtbaren Ausgabe empfiehlt sich zusätzlich ein Leerzeichen zwischen Zahl und Prozentzeichen:
+Python
+print(f"CPU-Auslastung: {cpu_workload:.1f} %")
+4. Sprache vereinheitlichen
+Momentan ist die Ausgabe gemischt:
+Plain Text
+OpsWatch CLI läuft!
+Status: Bereit
+CPU Load: 17.3%
+Das ist kein Python-Fehler. Für eine professionelle Benutzeroberfläche sollte die Sprache aber einheitlich sein.
+Für eine deutsche Ausgabe:
+Python
+print(f"CPU-Auslastung: {cpu_workload:.1f} %")
+Alternativ könntest du die gesamte Ausgabe auf Englisch umstellen. Für deinen aktuellen Lernstand und die bisherige Oberfläche ist Deutsch konsistenter.
+5. Deployment-Ausgabe beschriften
+Aktuell erfolgt die Ausgabe so:
+Python
+print(deployment_status)
+Wenn describe_deployment() beispielsweise "Erfolgreich" zurückgibt, sieht ein Benutzer nur:
+Plain Text
+Erfolgreich
+Mit einer Beschriftung wird die Bedeutung sofort klar:
+Python
+print(f"Deployment: {deployment_status}")
+Das ist besonders wichtig, sobald mehrere Werte untereinander ausgegeben werden.
+6. Reihenfolge der Ausgabe
+Du ermittelst jetzt richtigerweise erst alle Werte:
+Python
+deployment_status = describe_deployment(successful=True)
+status = evaluate_status(status_code)
+cpu_workload = cpu_load()
+Anschließend erfolgt die Ausgabe. Das ist gut.
+Ich würde lediglich die Überschrift zuerst anzeigen:
+Python
+print("OpsWatch CLI läuft!")
+Danach folgen die Details. Die Konsolenausgabe erhält dadurch eine verständliche Struktur:
+Plain Text
+OpsWatch CLI läuft!
+Version: 0.1.0
+Status: Bereit
+Deployment: Erfolgreich
+CPU-Auslastung: 17.3 %
+7. Hinweis zum kopierten Code
+Im Chat erscheinen:
+Plain Text
+<br>
+-&gt;
+Das sind HTML-Darstellungen, die wahrscheinlich beim Kopieren entstanden sind. In deiner tatsächlichen Python-Datei darf die Funktionsdefinition nur so aussehen:
+Python
+def main() -> None:
+Würde in der Datei tatsächlich -&gt; stehen, meldete Python einen SyntaxError.
+Code-Review-Bewertung
+Lesbarkeit: sehr gut
+
+    verständliche Variablennamen
+    kurze und übersichtliche main()-Funktion
+    sinnvoll gegliederter Programmablauf
+    CPU-Wert gut formatiert
+
+Struktur: sehr gut
+
+    Funktionen befinden sich in fachlich passenden Modulen
+    main() koordiniert den Ablauf
+    Messung, Bewertung und Ausgabe sind nachvollziehbar getrennt
+
+Effizienz: gut
+Für diese Anwendung gibt es keine auffälligen Effizienzprobleme. Wenn cpu_load() mit psutil.cpu_percent(interval=1) arbeitet, wartet das Programm bewusst eine Sekunde, damit eine aussagekräftige Messung entstehen kann.
+Python-Best-Practices: sehr gut
+Du nutzt bereits:
+
+    Modul-Docstring
+    Funktions-Docstring
+    Type Hint
+    main()-Funktion
+    __name__-Guard
+    f-Strings
+    formatierte Fließkommazahlen
+    modulare Dateien
+    sprechende Variablennamen
+
+Gesamtbewertung
+Sehr guter Fortschritt. Die vorherige überflüssige Variable hast du korrekt entfernt. Offen sind nur kleinere Verbesserungen an der Darstellung und sprachlichen Konsistenz.
+Übung
+Baue als nächsten Schritt eine einfache CPU-Warnung in main.py ein.
+Anforderungen
+
+    Lege einen Grenzwert von 80.0 Prozent fest.
+    Prüfe nach der CPU-Messung, ob cpu_workload größer als dieser Grenzwert ist.
+    Gib bei Überschreitung folgende zusätzliche Meldung aus:
+
+Plain Text
+Warnung: Hohe CPU-Auslastung!
+
+    Unterhalb oder genau auf dem Grenzwert soll keine Warnung erscheinen.
+    Verwende für den Grenzwert einen aussagekräftigen Variablennamen.
+
+Der noch zu ergänzende Ablauf sieht gedanklich so aus:
+Plain Text
+CPU messen
+    │
+    ▼
+Ist CPU-Auslastung größer als der Grenzwert?
+    │
+    ├── Ja   → Warnung ausgeben
+    │
+    └── Nein → keine zusätzliche Ausgabe
+Verständnisfragen
+
+    Welchen Datentyp sollte der Grenzwert haben?
+    Welcher Vergleichsoperator steht für „größer als“?
+    Warum ist 80.0 als benannter Grenzwert verständlicher, als die Zahl direkt in die Bedingung zu schreiben?
+    Wird bei einer Auslastung von genau 80.0 Prozent eine Warnung ausgegeben, wenn du „größer als“ verwendest?
+
+Hinweis
+Ein erster kleiner Hinweis:
+Python
+if cpu_workload ... grenzwert:
+    print(...)
+Ersetze die Auslassungen selbst. Platziere die Prüfung nach der normalen Ausgabe der CPU-Auslastung.
+Prüfe danach das Projekt:
+Shell
+uv run python main.py
+uv run ruff check .
+uv run ruff format --check .
+Kontrolliere anschließend die Änderung:
+Shell
+git status
+git diff
+Für diese neue Funktionalität passt eine Commit-Nachricht wie:
+Shell
+git add main.py
+git commit -m "feat: add high CPU usage warning"
+feat ist hier passend, weil die Warnmeldung eine neue Funktion des Programms darstellt.
+Nächster Lernschritt
+Nach der einfachen Bedingung solltest du den Grenzwert als Konstante behandeln. Anschließend können wir die CPU-Bewertung aus main.py in eine eigene Funktion verschieben und erste automatisierte Tests dafür schreiben.
+Wichtigste Verbesserungen
+
+    Die ungenutzte Statuszuweisung wurde erfolgreich entfernt.
+    .1f formatiert die CPU-Auslastung korrekt.
+    Die sichtbare Ausgabe sollte sprachlich einheitlich sein.
+    Der Deployment-Wert wird mit einer Beschriftung verständlicher.
+    Die Programmdaten werden bereits sauber vor der Ausgabe ermittelt.
+
+You said:
+"""OpsWatch CLI: Command-line Tool for system monitoring."""
+
+
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+
+
+
+
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+
+
+    print("OpsWatch CLI running!")
+    print(deployment_status)
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU Load: {cpu_workload:.1f}%")
+
+
+    if cpu_workload >= 80.0:
+        print("Warning high CPU-Load")
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+Python Lehrer said:
+Python Lehrer
+Python Lehrer
+Begründung abgeschlossen in 1 Schritt
+Thema
+Code Review: CPU-Warnung mit einer Bedingung
+Du hast die CPU-Warnung erfolgreich umgesetzt und dabei die Messung, den Vergleichsoperator und eine bedingte Ausgabe korrekt miteinander verbunden. Ein wichtiger fachlicher Punkt ist noch zu korrigieren: Mit >= erscheint die Warnung auch bei exakt 80.0 %, obwohl die vorherige Anforderung nur Werte über dem Grenzwert vorsah.
+Beispiel
+So ist dein aktueller Stand konsistent und erfüllt die bisherige Anforderung:
+Python
+"""OpsWatch CLI: Command-line tool for system monitoring."""
+ 
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+ 
+ 
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+    cpu_warning_threshold = 80.0
+ 
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+ 
+    print("OpsWatch CLI running!")
+    print(f"Deployment: {deployment_status}")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU load: {cpu_workload:.1f} %")
+ 
+    if cpu_workload > cpu_warning_threshold:
+        print("Warning: High CPU load!")
+ 
+ 
+if __name__ == "__main__":
+    main()
+Weitere Zeilen anzeigen
+Erklärung des Codes
+1. Die Bedingung funktioniert
+Du hast geschrieben:
+Python
+if cpu_workload >= 80.0:
+    print("Warning high CPU-Load")
+Damit prüft Python, ob die gemessene CPU-Auslastung mindestens 80.0 beträgt.
+Der eingerückte print()-Aufruf wird nur ausgeführt, wenn die Bedingung wahr ist.
+Plain Text
+CPU-Wert 79.9  → keine Warnung
+CPU-Wert 80.0  → Warnung bei >=
+CPU-Wert 80.1  → Warnung
+Die vorherige Aufgabenstellung lautete jedoch:
+
+    Unterhalb oder genau auf dem Grenzwert soll keine Warnung erscheinen.
+
+Deshalb muss der Vergleichsoperator hier > sein:
+Python
+if cpu_workload > cpu_warning_threshold:
+Dann gilt:
+Plain Text
+CPU-Wert 79.9  → keine Warnung
+CPU-Wert 80.0  → keine Warnung
+CPU-Wert 80.1  → Warnung
+Das ist ein typischer Grenzfall. Solche Fälle sind später beim automatisierten Testen besonders wichtig.
+2. Benannter Grenzwert statt „magischer Zahl“
+Die Zahl 80.0 steht bei dir direkt in der Bedingung:
+Python
+if cpu_workload >= 80.0:
+Der Code funktioniert, aber ein eigener Name erklärt die Bedeutung besser:
+Python
+cpu_warning_threshold = 80.0
+Anschließend lautet die Bedingung:
+Python
+if cpu_workload > cpu_warning_threshold:
+threshold bedeutet auf Deutsch Schwellenwert oder Grenzwert. Durch den Namen erkennt man sofort, welche Aufgabe die Zahl erfüllt.
+Bei einer späteren Änderung muss der Wert außerdem nur an einer zentralen Stelle angepasst werden.
+3. Datentyp des Grenzwerts
+cpu_load() liefert sinnvollerweise einen float, beispielsweise:
+Python
+17.3
+Daher ist auch der Grenzwert als Fließkommazahl passend:
+Python
+cpu_warning_threshold = 80.0
+Python könnte zwar problemlos einen float mit dem Integer 80 vergleichen, aber 80.0 macht deutlich, dass hier Prozentwerte mit möglichen Nachkommastellen verarbeitet werden.
+4. Warnmeldung sprachlich verbessern
+Deine Meldung lautet:
+Python
+print("Warning high CPU-Load")
+Verständlicheres Englisch wäre:
+Python
+print("Warning: High CPU load!")
+Verbessert wurden:
+
+    Doppelpunkt nach „Warning“, um Warnung und Beschreibung zu trennen
+    „CPU load“ ohne Bindestrich, da dies die übliche Schreibweise ist
+    Ausrufezeichen, um die Warnung sichtbar hervorzuheben
+
+Auch bei dieser Zeile ist die Schreibweise ohne Bindestrich konsistenter:
+Python
+print(f"CPU load: {cpu_workload:.1f} %")
+5. Leerzeichen vor dem Prozentzeichen
+Aktuell:
+Python
+print(f"CPU Load: {cpu_workload:.1f}%")
+Lesbarer:
+Python
+print(f"CPU load: {cpu_workload:.1f} %")
+Das Leerzeichen verändert die Berechnung nicht. Es verbessert nur die sichtbare Darstellung.
+6. Deployment-Ausgabe beschriften
+Aktuell gibst du den Wert ohne Kontext aus:
+Python
+print(deployment_status)
+Besser:
+Python
+print(f"Deployment: {deployment_status}")
+Wenn die Funktion beispielsweise "Successful" zurückgibt, ist in der Ausgabe sofort erkennbar, worauf sich dieser Wert bezieht.
+7. Hinweis zum kopierten Code
+Im Chat werden HTML-Zeichen angezeigt:
+Plain Text
+-&gt;
+&gt;=
+<br>
+In deiner echten Python-Datei müssen sie so aussehen:
+Python
+def main() -> None:
+und:
+Python
+if cpu_workload >= 80.0:
+Falls PyCharm tatsächlich &gt;= enthält, entsteht ein Syntaxfehler. Wahrscheinlich wurden die Zeichen aber nur beim Einfügen in den Chat umgewandelt.
+Code-Review-Bewertung
+Lesbarkeit: gut
+Die Programmlogik ist leicht nachvollziehbar. Ein benannter Grenzwert verbessert die Aussagekraft zusätzlich.
+Struktur: sehr gut
+main() koordiniert weiterhin die einzelnen Module, ohne deren interne Aufgaben selbst zu übernehmen.
+Effizienz: gut
+Die zusätzliche Bedingung verursacht keinen relevanten Aufwand. Die bewusste Wartezeit stammt wahrscheinlich aus der CPU-Messung mit psutil, nicht aus dem Vergleich.
+Python-Best-Practices: gut
+Positiv sind:
+
+    main()-Funktion
+    __name__-Guard
+    Type Hint
+    Modul- und Funktions-Docstring
+    f-Strings
+    klare Variablennamen
+    Trennung in mehrere Module
+
+Zu verbessern sind:
+
+    Grenzwert benennen
+    vorherige Anforderung mit > exakt umsetzen
+    Ausgaben einheitlich beschriften
+    Schreibweise von „CPU load“ vereinheitlichen
+
+Gesamteindruck
+Die Übung ist fast vollständig gelöst. Besonders wichtig ist, dass du die Bedingung selbst korrekt in den bestehenden Programmablauf integriert hast. Der Unterschied zwischen > und >= ist kein großer Programmierfehler, sondern eine wichtige Präzisionsfrage bei Anforderungen.
+Übung
+Erweitere die CPU-Bewertung nun auf drei Stufen:
+Plain Text
+CPU-Auslastung bis einschließlich 60 %  → Normal
+CPU-Auslastung über 60 %                → Increased
+CPU-Auslastung über 80 %                → Warning
+Anforderungen
+
+    Definiere zwei verständlich benannte Grenzwerte.
+    Verwende eine Verzweigung mit if, elif und else.
+    Speichere das Ergebnis in einer Variablen namens cpu_status.
+    Gib am Ende beispielsweise Folgendes aus:
+
+Plain Text
+CPU status: Normal
+Achte besonders auf die Reihenfolge der Prüfungen. Eine CPU-Auslastung von 90.0 % ist schließlich sowohl größer als 60.0 als auch größer als 80.0.
+Verständnisfragen
+
+    Warum erfüllt 80.0 die Bedingung >= 80.0, aber nicht > 80.0?
+    Welchen Vorteil bietet cpu_warning_threshold gegenüber einer direkt eingesetzten Zahl?
+    Warum sollte bei mehreren Grenzwerten zuerst der höchste Grenzwert geprüft werden?
+    Was geschieht, wenn die Bedingung eines if-Blocks falsch ist und danach ein elif folgt?
+
+Hinweis
+Beginne gedanklich mit dieser Reihenfolge:
+Plain Text
+Ist der Wert über dem hohen Grenzwert?
+├── Ja: Warning
+└── Nein: Ist er über dem niedrigeren Grenzwert?
+          ├── Ja: Increased
+          └── Nein: Normal
+Schreibe die Verzweigung selbst und prüfe danach:
+Shell
+uv run python main.py
+uv run ruff check .
+uv run ruff format --check .
+Kontrolliere die Änderung vor dem Commit:
+Shell
+git status
+git diff
+Wenn alles funktioniert:
+Shell
+git add main.py
+git commit -m "feat: add CPU load status levels"
+Nächster Lernschritt
+Nach den drei CPU-Stufen verschieben wir die Bewertungslogik in eine eigene Funktion. Dadurch kann die Auswertung unabhängig von der echten CPU-Messung getestet werden. Das führt sinnvoll zu deinem nächsten professionellen Thema: erste automatisierte Tests mit pytest.
+Wichtigste Verbesserungen
+
+    >= wurde durch > ersetzt, damit bei exakt 80.0 % keine Warnung erscheint.
+    Der Grenzwert erhielt einen aussagekräftigen Namen.
+    Die englischen Ausgaben wurden sprachlich vereinheitlicht.
+    Der Deployment-Wert wurde beschriftet.
+    Die nächste Übung vertieft Grenzfälle und if-, elif- und else-Verzweigungen.
+
+You said:
+"""OpsWatch CLI: Command-line Tool for system monitoring."""
+
+
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+
+
+
+
+def cpu_usage(cpu_load: float) ->str:
+    if cpu_workload > cpu_increased_threshold:
+        cpu_msg = "CPU load: increased"
+    if cpu_workload > cpu_warning_threshold:
+        cpu_msg = "Warning: High CPU load!"
+    else:
+        cpu_msg= "CPU Load: Normal"
+    return cpu_msg
+    
+
+
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+    cpu_warning_threshold = 80.0
+    cpu_increased_threshold = 60.0
+
+
+    print("OpsWatch CLI running!")
+    print(f"Deployment: {deployment_status}")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU Load: {cpu_workload:.1f}%")
+    print(f"{cpu_msg}")
+    
+    
+    
+
+
+    
+   
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+Python Lehrer said:
+Python Lehrer
+Python Lehrer
+Begründung abgeschlossen in 1 Schritt
+Thema
+Code Review: CPU-Auslastung in einer eigenen Funktion bewerten
+Die Idee ist sehr gut: Du möchtest die Bewertung aus main() in eine eigene Funktion verschieben. Genau diese Trennung macht den Code leichter lesbar und später gut testbar. Aktuell verhindern jedoch einige Gültigkeitsbereichs- und Verzweigungsfehler die Ausführung.
+Beispiel
+Eine korrigierte Version, die nah an deinem Entwurf bleibt:
+Python
+"""OpsWatch CLI: Command-line tool for system monitoring."""
+ 
+from cpu import cpu_load
+from deployment import describe_deployment
+from status import evaluate_status
+ 
+CPU_WARNING_THRESHOLD = 80.0
+CPU_INCREASED_THRESHOLD = 60.0
+ 
+ 
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+    """Return a status message for the given CPU workload."""
+    if cpu_workload > CPU_WARNING_THRESHOLD:
+        cpu_msg = "Warning: High CPU load!"
+    elif cpu_workload > CPU_INCREASED_THRESHOLD:
+        cpu_msg = "CPU load: Increased"
+    else:
+        cpu_msg = "CPU load: Normal"
+ 
+    return cpu_msg
+ 
+ 
+def main() -> None:
+    """Run the main program."""
+    version = "0.1.0"
+    status_code = 0
+ 
+    deployment_status = describe_deployment(successful=True)
+    status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+    cpu_msg = evaluate_cpu_usage(cpu_workload)
+ 
+    print("OpsWatch CLI running!")
+    print(f"Deployment: {deployment_status}")
+    print(f"Version: {version}")
+    print(f"Status: {status}")
+    print(f"CPU load: {cpu_workload:.1f} %")
+    print(cpu_msg)
+ 
+ 
+if __name__ == "__main__":
+    main()
+Weitere Zeilen anzeigen
+Erklärung des Codes
+1. Funktionsparameter und verwendete Variable stimmen nicht überein
+Du definierst die Funktion mit:
+Python
+def cpu_usage(cpu_load: float) -> str:
+Innerhalb der Funktion verwendest du jedoch:
+Python
+if cpu_workload > cpu_increased_threshold:
+Die Funktion kennt nur ihren Parameter cpu_load. cpu_workload wurde dagegen ausschließlich innerhalb von main() definiert.
+Variablen innerhalb einer Funktion sind normalerweise nur in dieser Funktion verfügbar:
+Plain Text
+main()
+└── cpu_workload       nur innerhalb von main()
+ 
+evaluate_cpu_usage()
+└── cpu_workload       eigener Funktionsparameter
+Deshalb verwendet die korrigierte Funktion einen passenden Parameter:
+Python
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+Der Name evaluate_cpu_usage beschreibt außerdem genauer, was die Funktion macht: Sie misst die CPU nicht, sondern bewertet einen bereits gemessenen Wert.
+2. Namenskonflikt mit cpu_load
+Du importierst:
+Python
+from cpu import cpu_load
+Dann verwendest du denselben Namen als Funktionsparameter:
+Python
+def cpu_usage(cpu_load: float) -> str:
+Innerhalb dieser Funktion würde cpu_load nicht mehr für die importierte Funktion stehen, sondern für den übergebenen Messwert. Das nennt man Überschatten eines Namens.
+Technisch kann Python damit umgehen, aber es verwirrt Leser. Besser ist:
+Python
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+Damit sind die Bedeutungen klar:
+
+    cpu_load() ist die Messfunktion.
+    cpu_workload ist der gemessene Zahlenwert.
+    evaluate_cpu_usage() bewertet diesen Zahlenwert.
+
+3. Die Grenzwerte sind in der Bewertungsfunktion nicht bekannt
+In deinem Code liegen die Grenzwerte in main():
+Python
+cpu_warning_threshold = 80.0
+cpu_increased_threshold = 60.0
+Du verwendest sie aber in einer anderen Funktion. Dort sind sie nicht verfügbar.
+Das würde zu dieser Art von Fehler führen:
+Plain Text
+NameError: name 'cpu_increased_threshold' is not defined
+Da die Grenzwerte feste Einstellungen des Programms sind, eignen sie sich als Konstanten auf Modulebene:
+Python
+CPU_WARNING_THRESHOLD = 80.0
+CPU_INCREASED_THRESHOLD = 60.0
+Die Großschreibung signalisiert:
+
+    Dieser Wert ist eine Programmeinstellung und soll während der Ausführung nicht verändert werden.
+
+4. Zwei einzelne if-Anweisungen erzeugen eine falsche Auswertung
+Du hast geschrieben:
+Python
+if cpu_workload > cpu_increased_threshold:
+    cpu_msg = "CPU load: increased"
+ 
+if cpu_workload > cpu_warning_threshold:
+    cpu_msg = "Warning: High CPU load!"
+else:
+    cpu_msg = "CPU Load: Normal"
+Das else gehört nur zum direkt davorstehenden zweiten if.
+Nehmen wir einen CPU-Wert von 70.0:
+
+    70.0 > 60.0 ist wahr.
+    cpu_msg wird auf "CPU load: increased" gesetzt.
+    70.0 > 80.0 ist falsch.
+    Der else-Block wird ausgeführt.
+    cpu_msg wird wieder mit "CPU Load: Normal" überschrieben.
+
+Das Ergebnis wäre also fälschlicherweise Normal.
+Du benötigst eine zusammenhängende Verzweigung:
+Python
+if cpu_workload > CPU_WARNING_THRESHOLD:
+    cpu_msg = "Warning: High CPU load!"
+elif cpu_workload > CPU_INCREASED_THRESHOLD:
+    cpu_msg = "CPU load: Increased"
+else:
+    cpu_msg = "CPU load: Normal"
+Python wählt dabei genau einen Zweig aus.
+5. Der höchste Grenzwert muss zuerst geprüft werden
+Die Reihenfolge ist wichtig:
+Python
+if cpu_workload > CPU_WARNING_THRESHOLD:
+kommt vor:
+Python
+elif cpu_workload > CPU_INCREASED_THRESHOLD:
+Ein CPU-Wert von 90.0 liegt schließlich sowohl über 60.0 als auch über 80.0.
+Wenn du zuerst > 60.0 prüfen würdest, würde Python bereits "Increased" auswählen und die Warnstufe nicht mehr prüfen.
+Der Ablauf ist deshalb:
+Plain Text
+CPU-Wert über 80?
+├── Ja: Warning
+└── Nein: CPU-Wert über 60?
+          ├── Ja: Increased
+          └── Nein: Normal
+6. Die Bewertungsfunktion muss aufgerufen werden
+In deinem main() steht:
+Python
+print(f"{cpu_msg}")
+cpu_msg wurde dort aber noch nicht definiert. Die Funktion zur Bewertung muss zuerst aufgerufen werden:
+Python
+cpu_msg = evaluate_cpu_usage(cpu_workload)
+Danach kann das Ergebnis ausgegeben werden:
+Python
+print(cpu_msg)
+Ein f-String wird hier nicht benötigt, weil nur der Inhalt der Variablen ausgegeben wird.
+7. Formatierung nach PEP 8
+In deinem Entwurf fehlen einige Leerzeichen:
+Python
+def cpu_usage(cpu_load: float) ->str:
+cpu_msg= "CPU Load: Normal"
+Die übliche Schreibweise ist:
+Python
+def cpu_usage(cpu_load: float) -> str:
+cpu_msg = "CPU load: Normal"
+Ruff sollte solche Stilprobleme teilweise erkennen beziehungsweise formatieren können.
+8. Hinweis zu den HTML-Zeichen
+Im eingefügten Text stehen:
+Plain Text
+-&gt;
+&gt;
+<br>
+In PyCharm müssen die echten Python-Zeichen stehen:
+Python
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+und:
+Python
+if cpu_workload > CPU_WARNING_THRESHOLD:
+Code-Review-Bewertung
+Lesbarkeit: gut mit Korrekturbedarf
+Die Absicht der neuen Funktion ist erkennbar. Die Namen cpu_load, cpu_workload und cpu_usage liegen aber zu nah beieinander und haben teilweise unterschiedliche Bedeutungen.
+Struktur: guter Fortschritt
+Die Auslagerung der CPU-Bewertung ist der richtige nächste Schritt. Dadurch hat jede Funktion eine klare Aufgabe:
+Plain Text
+cpu_load()             misst die CPU
+evaluate_cpu_usage()   bewertet die Messung
+main()                 koordiniert den Ablauf
+Effizienz: gut
+Die Vergleiche sind sehr günstig. Die eigentliche Wartezeit entsteht vermutlich durch psutil.cpu_percent(interval=1) und ist für eine Messung beabsichtigt.
+Python-Best-Practices: teilweise erfüllt
+Positiv:
+
+    Funktionsrückgabe als str
+    Type Hint für den Messwert
+    Auslagerung der Bewertungslogik
+    klare Statusstufen
+    modularer Projektaufbau
+
+Zu korrigieren:
+
+    Variablengültigkeit beachten
+    if, elif und else zusammenhängend verwenden
+    Funktion tatsächlich aufrufen
+    Namenskonflikte vermeiden
+    Leerzeichen nach PEP 8 setzen
+    feste Grenzwerte als Konstanten darstellen
+
+Übung
+Übernimm die Korrekturen und teste anschließend gezielt die Grenzfälle. Ändere dazu vorübergehend nicht die echte CPU-Messung, sondern führe in PyCharm in der Python-Konsole diese Aufrufe aus:
+Python
+evaluate_cpu_usage(50.0)
+evaluate_cpu_usage(60.0)
+evaluate_cpu_usage(60.1)
+evaluate_cpu_usage(80.0)
+evaluate_cpu_usage(80.1)
+Notiere für jeden Wert, welche Meldung du erwartest, bevor du den Aufruf ausführst.
+Beantworte außerdem:
+
+    Warum wird 80.0 bei > noch nicht als Warnung behandelt?
+    Warum muss die Prüfung für den Grenzwert 80.0 vor der Prüfung für 60.0 stehen?
+    Was ist der Unterschied zwischen cpu_load() und cpu_workload?
+    Warum kennt eine Funktion nicht automatisch alle lokalen Variablen aus main()?
+
+Hinweis
+Prüfe nach der Änderung:
+Shell
+uv run python main.py
+uv run ruff check .
+uv run ruff format --check .
+Kontrolliere danach den tatsächlichen Unterschied:
+Shell
+git status
+git diff
+Diese Änderung ist inzwischen mehr als eine reine Formatkorrektur. Du hast eine neue Bewertungsfunktion ergänzt. Eine passende Commit-Nachricht wäre:
+Shell
+git add main.py
+git commit -m "feat: add CPU load status evaluation"
+Nächster Lernschritt
+Als Nächstes sollten wir evaluate_cpu_usage() mit pytest automatisiert testen. Die Werte 60.0, 60.1, 80.0 und 80.1 eignen sich besonders gut, weil Fehler häufig direkt an solchen Grenzwerten auftreten.
+Wichtigste Verbesserungen
+
+    Die CPU-Bewertung erhält den Messwert als echten Funktionsparameter.
+    Die Grenzwerte werden als Konstanten verfügbar gemacht.
+    if, elif und else verhindern das Überschreiben eines bereits gewählten Status.
+    Der höchste Grenzwert wird zuerst geprüft.
+    Das Ergebnis der Bewertungsfunktion wird in main() gespeichert und anschließend ausgegeben.
+
+You said:
+wie teste ich mit pytest die funktion evaluate_cpu_usage
+Python Lehrer said:
+Python Lehrer
+Python Lehrer
+Begründung abgeschlossen in 1 Schritt
+Thema
+evaluate_cpu_usage() mit pytest testen
+Mit pytest prüfst du automatisch, ob deine Funktion für festgelegte CPU-Werte die erwartete Meldung zurückgibt. Da evaluate_cpu_usage() nur einen Zahlenwert erhält und einen Text zurückgibt, lässt sie sich besonders einfach testen, ohne die echte CPU-Auslastung abzuwarten.
+Vorbereitung
+Installiere pytest als Entwicklungsabhängigkeit:
+Shell
+uv add --dev pytest
+Lege anschließend diese Projektstruktur an:
+Plain Text
+opswatch/
+├── main.py
+├── cpu.py
+├── deployment.py
+├── status.py
+├── pyproject.toml
+└── tests/
+    └── test_main.py
+Der Ordner tests enthält die automatisierten Tests. Dateien mit dem Präfix test_ werden von pytest automatisch gefunden.
+Beispiel
+Funktion in main.py
+Deine Funktion sollte ungefähr so aufgebaut sein:
+Python
+CPU_WARNING_THRESHOLD = 80.0
+CPU_INCREASED_THRESHOLD = 60.0
+ 
+ 
+def evaluate_cpu_usage(cpu_workload: float) -> str:
+    """Return a status message for the given CPU workload."""
+    if cpu_workload > CPU_WARNING_THRESHOLD:
+        return "Warning: High CPU load!"
+    elif cpu_workload > CPU_INCREASED_THRESHOLD:
+        return "CPU load: Increased"
+    else:
+        return "CPU load: Normal"
+Hier geben wir die Meldung direkt mit return zurück. Die zusätzliche Variable cpu_msg ist nicht zwingend notwendig.
+Erster Test in tests/test_main.py
+Python
+from main import evaluate_cpu_usage
+ 
+ 
+def test_evaluate_cpu_usage_returns_normal() -> None:
+    result = evaluate_cpu_usage(50.0)
+ 
+    assert result == "CPU load: Normal"
+Erklärung des Codes
+1. Funktion importieren
+Python
+from main import evaluate_cpu_usage
+Der Test importiert die Funktion aus deiner Datei main.py.
+Der folgende Block in main.py verhindert dabei, dass das komplette Programm gestartet wird:
+Python
+if __name__ == "__main__":
+    main()
+Beim Import wird also nicht die echte CPU gemessen. pytest kann die Bewertungsfunktion isoliert prüfen.
+2. Testfunktion definieren
+Python
+def test_evaluate_cpu_usage_returns_normal() -> None:
+pytest erkennt Testfunktionen am Präfix:
+Plain Text
+test_
+Ein verständlicher Testname beschreibt das erwartete Verhalten. Hier lautet die Aussage:
+
+    evaluate_cpu_usage() liefert für eine normale Auslastung den Status Normal.
+
+3. Funktion mit einem kontrollierten Wert aufrufen
+Python
+result = evaluate_cpu_usage(50.0)
+Statt die tatsächliche CPU-Auslastung zu messen, übergibst du einen festen Testwert.
+Das macht den Test:
+
+    reproduzierbar
+    schnell
+    unabhängig vom aktuellen Zustand deines Computers
+
+4. Erwartetes Ergebnis prüfen
+Python
+assert result == "CPU load: Normal"
+assert bedeutet sinngemäß:
+
+    Stelle sicher, dass diese Aussage wahr ist.
+
+Ist der zurückgegebene Text korrekt, besteht der Test. Ist er falsch, zeigt pytest einen Fehler und den Unterschied zwischen erwartetem und tatsächlichem Ergebnis.
+Test ausführen
+Starte im Projektverzeichnis:
+Shell
+uv run pytest
+Für eine ausführlichere Ausgabe:
+Shell
+uv run pytest -v
+Bei bestandenem Test erscheint ungefähr:
+Plain Text
+tests/test_main.py::test_evaluate_cpu_usage_returns_normal PASSED
+Du kannst auch nur diese Datei ausführen:
+Shell
+uv run pytest tests/test_main.py -v
+Wichtige Grenzwerte
+Für deine Funktion solltest du nicht nur beliebige Werte testen, sondern besonders die Übergänge zwischen den Statusstufen:
+Plain Text
+50.0  → Normal
+60.0  → Normal
+60.1  → Increased
+80.0  → Increased
+80.1  → Warning
+Warum ist 80.0 noch Increased? Deine Bedingung lautet:
+Python
+cpu_workload > CPU_WARNING_THRESHOLD
+80.0 ist nicht größer als 80.0. Erst ein Wert über 80.0 löst die Warnung aus.
+Beispiel für den nächsten Test
+Python
+def test_evaluate_cpu_usage_returns_increased() -> None:
+    result = evaluate_cpu_usage(70.0)
+ 
+    assert result == "CPU load: Increased"
+Damit enthalten deine Tests zunächst zwei Fälle:
+Python
+from main import evaluate_cpu_usage
+ 
+ 
+def test_evaluate_cpu_usage_returns_normal() -> None:
+    result = evaluate_cpu_usage(50.0)
+ 
+    assert result == "CPU load: Normal"
+ 
+ 
+def test_evaluate_cpu_usage_returns_increased() -> None:
+    result = evaluate_cpu_usage(70.0)
+ 
+    assert result == "CPU load: Increased"
+Typische Fehlermeldung verstehen
+Falls ein Test fehlschlägt, könnte pytest etwa Folgendes anzeigen:
+Plain Text
+E       AssertionError: assert 'CPU load: Normal' == 'CPU load: Increased'
+Dabei gilt:
+
+    links steht das tatsächliche Ergebnis
+    rechts steht das erwartete Ergebnis
+
+Das zeigt dir direkt, welcher Rückgabewert nicht stimmt.
+Übung
+Ergänze selbst drei weitere Tests:
+
+    Eine CPU-Auslastung von 60.0
+    Eine CPU-Auslastung von 80.0
+    Eine CPU-Auslastung von 80.1
+
+Verwende für jeden Fall eine eigene Testfunktion und entscheide vor dem Ausführen, welche Meldung du erwartest.
+Verständnisfragen
+
+    Warum testen wir mit festen Werten und nicht mit cpu_load()?
+    Warum ist 80.0 noch keine Warnung?
+    Was macht die assert-Anweisung?
+    Woran erkennt pytest eine Testfunktion?
+    Warum wird main() beim Import durch den Test nicht gestartet?
+
+Hinweis
+Ein Test für die Warnstufe beginnt beispielsweise so:
+Python
+def test_evaluate_cpu_usage_returns_warning() -> None:
+    result = evaluate_cpu_usage(...)
+ 
+    assert result == ...
+Setze Wert und erwartete Meldung selbst ein.
+Prüfe danach das gesamte Projekt:
+Shell
+uv run pytest -v
+uv run ruff check .
+uv run ruff format --check .
+Wenn alle Tests erfolgreich sind:
+Shell
+git status
+git diff
+git add main.py tests/test_main.py pyproject.toml uv.lock
+git commit -m "test: add CPU usage evaluation tests"
+test ist hier ein passendes Commit-Präfix, weil du keine neue Benutzerfunktion hinzufügst, sondern die vorhandene Funktion automatisiert absicherst.
+Nächster Lernschritt
+Nachdem die einzelnen Tests funktionieren, kannst du mehrere Testfälle mit @pytest.mark.parametrize zusammenfassen. Dabei lernst du, dieselbe Testlogik mit verschiedenen Eingabewerten auszuführen, ohne fünf nahezu identische Testfunktionen schreiben zu müssen.
