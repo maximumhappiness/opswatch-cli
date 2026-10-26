@@ -13,53 +13,55 @@ from opswatch_cli.status import evaluate_status
 app = typer.Typer()
 
 
+def collect_status_data() -> dict:
+    """Collect currecnt system status data."""
+    version = "0.1.0"
+    status_code = 0
+    deployment_status = describe_deployment(successful=True)
+    system_status = evaluate_status(status_code)
+    cpu_workload = cpu_load()
+    cpu_message = evaluate_cpu_usage(cpu_workload)
+    memory_percent = memory_load()
+    memory_message = evaluate_memory_usage(memory_percent)
+
+    return {
+        "version": version,
+        "deployment": deployment_status,
+        "status": system_status,
+        "cpu_percent": cpu_workload,
+        "cpu_status": cpu_message,
+        "memory_percent": memory_percent,
+        "memory_status": memory_message,
+    }
+
+
 @app.callback()
 def cli() -> None:
     """Monitor system health from the command line."""
 
-
 @app.command()
-def status(
-json_output: Annotated[
-bool,
-typer.Option(help="Output status as JSON."),
-] = False) -> None:
+def status(json_output: Annotated[bool,typer.Option("--json",help="Output status as JSON.")] = False) -> None:
 #def status(json_output: bool = False) -> None:
     """Monitor system health from the command line."""
-    version = "0.1.0"
-    status_code = 0
-    deployment_status = describe_deployment(successful=True)
-    status = evaluate_status(status_code)
-    cpu_workload = cpu_load()
-    cpu_msg = evaluate_cpu_usage(cpu_workload)
-    memory_usage = memory_load()
-    memory_msg = evaluate_memory_usage(memory_usage)
-
-    status_data = {
-    "version": version,
-    "deployment": deployment_status,
-    "status": status,
-    "cpu_percent": cpu_workload,
-    "cpu_status": cpu_msg,
-    "memory_percent": memory_usage,
-    "memory_status": memory_msg,
-    }
+    status_data = collect_status_data()
 
     if json_output:
         typer.echo(
             json.dumps(
                 status_data,
                 indent=4,
-                ))
+            )
+        )
+        return
 
     typer.echo("OpsWatch CLI running!")
-    typer.echo(f"Deployment: {deployment_status}")
-    typer.echo(f"Version: {version}")
-    typer.echo(f"Status: {status}")
-    typer.echo(f"CPU load: {cpu_workload:.1f}%")
-    typer.echo(f"{cpu_msg}")
-    typer.echo(f"Memory load: {memory_usage:.1f}%")
-    typer.echo(f"{memory_msg}")
+    typer.echo(f"Deployment: {status_data['deployment']}")
+    typer.echo(f"Version: {status_data['version']}")
+    typer.echo(f"Status: {status_data['status']}")
+    typer.echo(f"CPU load: {status_data['cpu_percent']:.1f}%")
+    typer.echo(f"{status_data['cpu_status']}")
+    typer.echo(f"Memory load: {status_data['memory_percent']:.1f}%")
+    typer.echo(f"{status_data['memory_status']}")
 
 
 if __name__ == "__main__":
