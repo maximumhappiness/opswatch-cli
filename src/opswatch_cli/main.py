@@ -10,12 +10,13 @@ from opswatch_cli.deployment import describe_deployment
 from opswatch_cli.memory import evaluate_memory_usage, memory_load
 from opswatch_cli.status import evaluate_status
 
+APP_VERSION = "0.1.0"
+
 app = typer.Typer()
 
 
 def collect_status_data() -> dict:
-    """Collect currecnt system status data."""
-    version = "0.1.0"
+    """Collect current system status data."""
     status_code = 0
     deployment_status = describe_deployment(successful=True)
     system_status = evaluate_status(status_code)
@@ -25,7 +26,7 @@ def collect_status_data() -> dict:
     memory_message = evaluate_memory_usage(memory_percent)
 
     return {
-        "version": version,
+        "version": APP_VERSION,
         "deployment": deployment_status,
         "status": system_status,
         "cpu_percent": cpu_workload,
@@ -40,8 +41,14 @@ def cli() -> None:
     """Monitor system health from the command line."""
 
 @app.command()
-def status(json_output: Annotated[bool,typer.Option("--json",help="Output status as JSON.")] = False) -> None:
-#def status(json_output: bool = False) -> None:
+def status(
+    json_output: Annotated[
+        bool,
+        typer.Option(
+            "--json",
+            help="Output status as JSON."),
+            ] = False,
+) -> None:
     """Monitor system health from the command line."""
     status_data = collect_status_data()
 
@@ -55,14 +62,25 @@ def status(json_output: Annotated[bool,typer.Option("--json",help="Output status
         return
 
     typer.echo("OpsWatch CLI running!")
-    typer.echo(f"Deployment: {status_data['deployment']}")
-    typer.echo(f"Version: {status_data['version']}")
-    typer.echo(f"Status: {status_data['status']}")
+    typer.echo(f"OpsWatch CLI: {APP_VERSION}")
+    typer.echo(status_data["deployment"])
+    typer.echo(status_data["status"])
     typer.echo(f"CPU load: {status_data['cpu_percent']:.1f}%")
-    typer.echo(f"{status_data['cpu_status']}")
+    typer.echo(status_data["cpu_status"])
     typer.echo(f"Memory load: {status_data['memory_percent']:.1f}%")
-    typer.echo(f"{status_data['memory_status']}")
+    typer.echo(status_data["memory_status"])
 
+@app.command()
+def version( 
+    json_output: Annotated[
+        bool,
+        typer.Option(
+            "--json",
+            help="Output status as JSON."),
+            ] = False,
+)-> None:
+    """Shows the program Version."""
+    typer.echo(f"OpsWatch CLI: {APP_VERSION}")
 
 if __name__ == "__main__":
     app()
